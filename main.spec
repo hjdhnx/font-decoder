@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('./common.onnx','ddddocr'),('./onnxruntime_providers_shared.dll','onnxruntime\\capi')],
+    datas=[('./common.onnx','ddddocr'),('./common_old.onnx','ddddocr'),('./onnxruntime_providers_shared.dll','onnxruntime\\capi')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

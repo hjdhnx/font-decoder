@@ -23,6 +23,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import warnings
 import traceback
+from pathlib import Path
 
 # 关闭警告
 warnings.filterwarnings("ignore")
@@ -124,7 +125,8 @@ def get_font_dict(font_path, remove_temp=False, max_workers=16):
         except Exception as e:
             sys.exit(f'{e}')
     pathname = os.path.basename(font_path).split('.')[0]
-    file_dir = os.path.dirname(__file__)
+    file_dir = os.path.dirname(__file__) if exe_name == 'python.exe' else os.path.dirname(exe_path)
+    print(f'output: {file_dir}')
     dict_path = os.path.join(file_dir, 'output.json')
     dict_path1 = os.path.join(file_dir, 'output1.json')
     dict_path2 = os.path.join(file_dir, 'output2.json')
@@ -190,6 +192,12 @@ def arguments():
 def main(path=''):
     args = arguments()
     path = args.path or path
+    global exe_path
+    global exe_name
+    exe_path = Path(sys.executable)
+    exe_name = os.path.basename(exe_path)
+    print(f'exe_path:{exe_path},exe_name:{exe_name}')
+
     if path and (os.path.exists(path) or path.startswith('http')):
         t1 = time.time()
         model_path = os.path.join(os.path.dirname(__file__), './common.onnx')
