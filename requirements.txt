@@ -1,0 +1,10 @@
+ddddocr
+fontTools
+Pillow==10.4.0
+brotli
+svglib
+rlPyCairo
+PyInstaller
+pydantic
+requests
+typer
