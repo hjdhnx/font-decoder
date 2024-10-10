@@ -29,7 +29,7 @@ from pathlib import Path
 warnings.filterwarnings("ignore")
 requests.packages.urllib3.disable_warnings()
 
-VERSION = '1.0.0 2024 1010'
+VERSION = '1.0.2 20241011'
 # 创建一个锁
 lock = threading.Lock()
 
@@ -182,6 +182,8 @@ def arguments():
     parser.add_argument("-p", '--path', type=str, help=f"woff file path")
     parser.add_argument("-v", '--version', action='store_true', help=f"show app version")
     parser.add_argument("-r", '--remove', action='store_true', help=f"remove temp files after run")
+    parser.add_argument("-a", '--ad', action='store_true', help=f"show ddddocr ads")
+    parser.add_argument("-b", '--beta', action='store_true', help=f"use beta new model")
 
     args = parser.parse_args()
     if args.version:
@@ -204,7 +206,7 @@ def main(path=''):
         charsets_path = os.path.join(os.path.dirname(__file__), './charsets.json')
         # ocr = DdddOcr(import_onnx_path=model_path,charsets_path=charsets_path)
         global ocr
-        ocr = DdddOcr()
+        ocr = DdddOcr(show_ad=args.ad, beta=args.beta)
         print(get_font_dict(path, args.remove))
         t2 = time.time()
         print(f'cost: {round(t2 - t1, 2)} s')

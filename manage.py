@@ -14,5 +14,12 @@ def build():
     pyi.run(['main.spec'])
 
 
+@typer.command()
+def build_pro():
+    if not os.path.exists("./main_pro.spec"):
+        pyi.run(["-F", '--add-data', 'templates:templates', "main.py"])
+    pyi.run(['main_pro.spec'])
+
+
 if __name__ == "__main__":
     typer()
