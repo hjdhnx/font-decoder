@@ -24,12 +24,14 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import warnings
 import traceback
 from pathlib import Path
+import string
+import wcocr
 
 # 关闭警告
 warnings.filterwarnings("ignore")
 requests.packages.urllib3.disable_warnings()
 
-VERSION = '1.0.2 20241011'
+VERSION = '1.0.3 20241011'
 # 创建一个锁
 lock = threading.Lock()
 
@@ -63,6 +65,7 @@ def get_online_font(font_path):
 def get_single_font(fkey, fvalue, font, svg_path, png_path):
     ret = {fvalue.lower(): {}}
     global ocr
+    global wcocr_init
     try:
         # print(f'font dict key:{fkey},value:{fvalue}')
         with lock:
@@ -87,7 +90,21 @@ def get_single_font(fkey, fvalue, font, svg_path, png_path):
             text1 = ocr.classification(f.read())
             print_with_lock(f'font dict key:{fkey},value:{fvalue},ocr result:{text1}')
             if text1 != None and text1 != '':
-                ret[fvalue.lower()] = {'unicode_hex': hex(int(fkey)), 'int': fkey, 'char': text1[:1]}
+                text = text1[:1]
+                if wcocr_init and text in string.ascii_letters:
+                    print_with_lock(f'text is ascii_letters:{text},try use wetchat ocr validate it')
+                    try:
+                        result = wcocr.ocr(png_file)
+                        text1 = result['ocr_response'][0]['text']
+                        print_with_lock(f'wechat ocr text:{text1}')
+                        # 大小写修正
+                        if text1.lower() == text.lower():
+                            text = text1
+                    except Exception as e:
+                        print_with_lock(f'webchat ocr error:{e}')
+
+                ret[fvalue.lower()] = {'unicode_hex': hex(int(fkey)), 'int': fkey, 'char': text}
+
         print_with_lock(f'ret:{ret}')
         return ret
     except Exception as e:
@@ -184,6 +201,10 @@ def arguments():
     parser.add_argument("-r", '--remove', action='store_true', help=f"remove temp files after run")
     parser.add_argument("-a", '--ad', action='store_true', help=f"show ddddocr ads")
     parser.add_argument("-b", '--beta', action='store_true', help=f"use beta new model")
+    wechat_path = r"D:\soft\WeChat\[3.9.2.20]"
+    wechatocr_path = os.getenv("APPDATA") + r"\Tencent\WeChat\XPlugin\Plugins\WeChatOCR\7045\extracted\WeChatOCR.exe"
+    parser.add_argument("-x", '--wechat_path', type=str, default=wechat_path, help=wechat_path)
+    parser.add_argument("-y", '--wechatocr_path', type=str, default=wechatocr_path, help=wechatocr_path)
 
     args = parser.parse_args()
     if args.version:
@@ -191,9 +212,11 @@ def arguments():
     return args
 
 
-def main(path=''):
+def main(path='', ad=False, beta=False):
     args = arguments()
     path = args.path or path
+    ad = args.ad or ad
+    beta = args.beta or beta
     global exe_path
     global exe_name
     exe_path = Path(sys.executable)
@@ -206,7 +229,14 @@ def main(path=''):
         charsets_path = os.path.join(os.path.dirname(__file__), './charsets.json')
         # ocr = DdddOcr(import_onnx_path=model_path,charsets_path=charsets_path)
         global ocr
-        ocr = DdddOcr(show_ad=args.ad, beta=args.beta)
+        global wcocr_init
+        ocr = DdddOcr(show_ad=ad, beta=beta)
+        if args.wechatocr_path and args.wechat_path and os.path.exists(args.wechatocr_path) and os.path.exists(
+                args.wechat_path):
+            wcocr.init(args.wechatocr_path, args.wechat_path)
+            wcocr_init = True
+            print('found wechat ocr,init ok')
+
         print(get_font_dict(path, args.remove))
         t2 = time.time()
         print(f'cost: {round(t2 - t1, 2)} s')
@@ -217,3 +247,4 @@ if __name__ == '__main__':
     # main('https://lf6-awef.bytetos.com/obj/awesome-font/c/dc027189e0ba4cd-500.woff2')
     # main('https://lf6-awef.bytetos.com/obj/awesome-font/c/dc027189e0ba4cd-700.woff2')
     main()
+    # main('test_font/dc027189e0ba4cd.woff2', True, True)
